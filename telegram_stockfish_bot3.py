@@ -9,7 +9,7 @@ import io
 import cairosvg
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
-STOCKFISH_PATH = os.getenv("STOCKFISH_PATH", "stockfish/stockfish-exec")
+STOCKFISH_PATH = os.getenv("STOCKFISH_PATH", "stockfish/stockfish-ubuntu-x86-64")
 
 
 # Configurar logging
