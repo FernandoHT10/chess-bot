@@ -262,21 +262,31 @@ async def move_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Nota: Para una implementación completa, necesitarías manejar el estado de la selección
     # y construir el movimiento paso a paso. Esto es un ejemplo simplificado.
 
-async def process_move_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Procesa la entrada de movimiento del usuario"""
+async def make_move(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Maneja el comando /move para realizar un movimiento"""
     chat_id = update.message.chat.id
     if chat_id not in games:
         games[chat_id] = ChessGame()
     
     game = games[chat_id]
-    move_text = update.message.text.strip()
+    
+    if not context.args:
+        await update.message.reply_text(
+            f"{EMOJIS['error']} Debes especificar un movimiento\n"
+            "Ejemplo: /move e2e4 o /move Nf3",
+            reply_markup=get_main_keyboard()
+        )
+        return
     
     if game.board.is_game_over():
         await update.message.reply_text(
             f"{EMOJIS['warning']} La partida ya terminó\n"
-            "Usa /reset para comenzar una nueva"
+            "Usa /reset para comenzar una nueva",
+            reply_markup=get_main_keyboard()
         )
         return
+    
+    move_text = " ".join(context.args)
     
     try:
         # Intentar interpretar como notación UCI o SAN
@@ -289,7 +299,8 @@ async def process_move_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         if move not in game.board.legal_moves:
             await update.message.reply_text(
                 f"{EMOJIS['error']} Movimiento ilegal\n"
-                f"{EMOJIS['warning']} Usa /best para sugerencias válidas"
+                f"{EMOJIS['warning']} Usa /best para sugerencias válidas",
+                reply_markup=get_main_keyboard()
             )
             return
         
@@ -316,7 +327,68 @@ async def process_move_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
     except ValueError as e:
         await update.message.reply_text(
             f"{EMOJIS['error']} Movimiento inválido: {str(e)}\n"
-            f"{EMOJIS['warning']} Usa notación UCI (e2e4) or SAN (Nf3) o los botones de ayuda"
+            f"{EMOJIS['warning']} Usa notación UCI (e2e4) or SAN (Nf3)",
+            reply_markup=get_main_keyboard()
+        )
+
+async def process_move_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Procesa la entrada de movimiento del usuario"""
+    chat_id = update.message.chat.id
+    if chat_id not in games:
+        games[chat_id] = ChessGame()
+    
+    game = games[chat_id]
+    move_text = update.message.text.strip()
+    
+    if game.board.is_game_over():
+        await update.message.reply_text(
+            f"{EMOJIS['warning']} La partida ya terminó\n"
+            "Usa /reset para comenzar una nueva",
+            reply_markup=get_main_keyboard()
+        )
+        return
+    
+    try:
+        # Intentar interpretar como notación UCI o SAN
+        try:
+            move = chess.Move.from_uci(move_text)
+        except ValueError:
+            move = game.board.parse_san(move_text)
+        
+        # Validar movimiento legal
+        if move not in game.board.legal_moves:
+            await update.message.reply_text(
+                f"{EMOJIS['error']} Movimiento ilegal\n"
+                f"{EMOJIS['warning']} Usa /best para sugerencias válidas",
+                reply_markup=get_main_keyboard()
+            )
+            return
+        
+        # Realizar movimiento
+        san_move = game.board.san(move)
+        game.make_move(move)
+        
+        # Generar imagen del nuevo estado del tablero
+        png_data = generate_board_image(game.board)
+        
+        with io.BytesIO(png_data) as photo:
+            photo.name = 'tablero.png'
+            await update.message.reply_photo(
+                photo=photo,
+                caption=(
+                    f"{EMOJIS['success']} Movimiento aplicado:\n"
+                    f"• SAN: {san_move}\n"
+                    f"• UCI: {move.uci()}\n"
+                    f"• Turno actual: {'Blancas' + EMOJIS['white_turn'] if game.board.turn else 'Negras' + EMOJIS['black_turn']}"
+                ),
+                reply_markup=get_main_keyboard()
+            )
+        
+    except ValueError as e:
+        await update.message.reply_text(
+            f"{EMOJIS['error']} Movimiento inválido: {str(e)}\n"
+            f"{EMOJIS['warning']} Usa notación UCI (e2e4) or SAN (Nf3) o los botones de ayuda",
+            reply_markup=get_main_keyboard()
         )
 
 async def chess_board(update: Update, context: ContextTypes.DEFAULT_TYPE, from_button=False):
