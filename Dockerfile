@@ -1,6 +1,7 @@
+# Imagen base de Python
 FROM python:3.11-slim
 
-# Instalar librerías del sistema necesarias para cairosvg
+# Instalar dependencias del sistema para cairosvg
 RUN apt-get update && apt-get install -y \
     libcairo2 \
     libpango-1.0-0 \
@@ -8,12 +9,17 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Crear y usar el directorio de la app
+# Directorio de trabajo
 WORKDIR /app
+
+# Copiar todos los archivos del proyecto
 COPY . /app
 
-# Instalar dependencias Python
+# Dar permisos de ejecución al binario Stockfish
+RUN chmod +x /app/stockfish/stockfish-ubuntu-x86-64
+
+# Instalar dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Comando para ejecutar tu bot
+# Comando por defecto al iniciar el contenedor
 CMD ["python", "telegram_stockfish_bot3.py"]
