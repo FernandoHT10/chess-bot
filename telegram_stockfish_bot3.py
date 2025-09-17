@@ -159,6 +159,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton(f"{EMOJIS['board']} Tablero", callback_data="board_menu")],
         [InlineKeyboardButton(f"{EMOJIS['move']} Movimientos", callback_data="move_menu")],
         [InlineKeyboardButton(f"{EMOJIS['eval']} Evaluación", callback_data="eval_menu")],
+        [InlineKeyboardButton("🎯 Partida con Stockfish (Web)", url="chess-web-red.vercel.app")],
         [InlineKeyboardButton(f"{EMOJIS['common_moves']} Jugadas Rápidas", callback_data="common_moves")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
